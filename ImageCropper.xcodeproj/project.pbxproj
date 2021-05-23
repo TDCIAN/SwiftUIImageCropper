@@ -11,6 +11,7 @@
 		18595DC4265A1E35003BC1C8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18595DC3265A1E35003BC1C8 /* ContentView.swift */; };
 		18595DC6265A1E37003BC1C8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 18595DC5265A1E37003BC1C8 /* Assets.xcassets */; };
 		18595DC9265A1E37003BC1C8 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 18595DC8265A1E37003BC1C8 /* Preview Assets.xcassets */; };
+		18595DD2265A1ED0003BC1C8 /* ImageCroppingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18595DD1265A1ED0003BC1C8 /* ImageCroppingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +21,7 @@
 		18595DC5265A1E37003BC1C8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		18595DC8265A1E37003BC1C8 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		18595DCA265A1E37003BC1C8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		18595DD1265A1ED0003BC1C8 /* ImageCroppingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCroppingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +56,7 @@
 			children = (
 				18595DC1265A1E35003BC1C8 /* ImageCropperApp.swift */,
 				18595DC3265A1E35003BC1C8 /* ContentView.swift */,
+				18595DD1265A1ED0003BC1C8 /* ImageCroppingView.swift */,
 				18595DC5265A1E37003BC1C8 /* Assets.xcassets */,
 				18595DCA265A1E37003BC1C8 /* Info.plist */,
 				18595DC7265A1E37003BC1C8 /* Preview Content */,
@@ -140,6 +143,7 @@
 			files = (
 				18595DC4265A1E35003BC1C8 /* ContentView.swift in Sources */,
 				18595DC2265A1E35003BC1C8 /* ImageCropperApp.swift in Sources */,
+				18595DD2265A1ED0003BC1C8 /* ImageCroppingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

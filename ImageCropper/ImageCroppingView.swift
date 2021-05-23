@@ -7,26 +7,110 @@
 
 import SwiftUI
 
+import SwiftUI
+
 var UniversalSafeOffsets = UIApplication.shared.windows.first?.safeAreaInsets
 
 struct ImageCroppingView: View {
+    //These are the initial dimension of the actual image
+    @State var imageWidth:CGFloat = 0
+    @State var imageHeight:CGFloat = 0
+    
+    @Binding var shown:Bool
+    
+    @State var croppingOffset = CGSize(width: 0, height: 0)
+    @State var croppingMagnification:CGFloat = 1
+    
+    var image:UIImage
+    @Binding var croppedImage:UIImage?
+    
     var body: some View {
-        Text("Hello, World!")
+        ZStack{
+            //Black background
+            Color.black
+                .edgesIgnoringSafeArea(.vertical)
+            VStack{
+                Spacer()
+                    .frame(height: UniversalSafeOffsets?.top ?? 0)
+                HStack(alignment: .top){
+                    Button(action: {shown = false}){
+                        Text("Cancel")
+                            .foregroundColor(.red)
+                    }
+                    Spacer()
+                    Text("You may need to re-select your filter after cropping")
+                        .font(.system(size: 12))
+                        .foregroundColor(.init(white: 0.7))
+                        .padding(.horizontal, 20)
+                        .multilineTextAlignment(.center)
+                    Spacer()
+                    Button(action: {
+                        let cgImage: CGImage = image.cgImage!
+                        print("image: \(cgImage.width) x \(cgImage.height)")
+                        let scaler = CGFloat(cgImage.width)/imageWidth
+                        let dim:CGFloat = getDimension(w: CGFloat(cgImage.width), h: CGFloat(cgImage.height))
+                        
+                        let xOffset = (((imageWidth/2) - (getDimension(w: imageWidth, h: imageHeight) * croppingMagnification/2)) + croppingOffset.width) * scaler
+                        let yOffset = (((imageHeight/2) - (getDimension(w: imageWidth, h: imageHeight) * croppingMagnification/2)) + croppingOffset.height) * scaler
+                        print("xOffset = \(xOffset)")
+                        let scaledDim = dim * croppingMagnification
+                        
+                        
+                        if let cImage = cgImage.cropping(to: CGRect(x: xOffset, y: yOffset, width: scaledDim, height: scaledDim)){
+                            croppedImage = UIImage(cgImage: cImage)
+                            shown = false
+                        }
+                        
+                        
+                        
+                    }){
+                        Text("Done")
+                            .foregroundColor(.white)
+                            .fontWeight(.semibold)
+                    }
+                    
+                }
+                .font(.system(size: 20))
+                .padding()
+                
+                Spacer()
+                ZStack{
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .overlay(GeometryReader{geo -> AnyView in
+                            DispatchQueue.main.async{
+                                self.imageWidth = geo.size.width
+                                self.imageHeight = geo.size.height
+                            }
+                            return AnyView(EmptyView())
+                        })
+                    
+                    ViewFinderView(imageWidth: self.$imageWidth, imageHeight: self.$imageHeight, finalOffset: $croppingOffset, finalMagnification: $croppingMagnification)
+                    
+                    
+                }
+                .padding()
+                Spacer()
+            }
+        }.edgesIgnoringSafeArea(.vertical)
     }
 }
 
-struct ViewFinderView: View {
-    @Binding var imageWidth: CGFloat
-    @Binding var imageHeight: CGFloat
-    @State var center: CGFloat = 0
+
+struct ViewFinderView:View{
     
-    @State var activeOffset: CGSize = CGSize(width: 0, height: 0)
-    @Binding var finalOffset: CGSize
+    @Binding var imageWidth:CGFloat
+    @Binding var imageHeight:CGFloat
+    @State var center:CGFloat = 0
     
-    @State var activeMagnification: CGFloat = 1
-    @Binding var finalMagnification: CGFloat
+    @State var activeOffset:CGSize = CGSize(width: 0, height: 0)
+    @Binding var finalOffset:CGSize
     
-    @State var dotSize: CGFloat = 13
+    @State var activeMagnification:CGFloat = 1
+    @Binding var finalMagnification:CGFloat
+    
+    @State var dotSize:CGFloat = 13
     var dotColor = Color.init(white: 1).opacity(0.9)
     var surroundingColor = Color.black.opacity(0.45)
     
@@ -200,39 +284,43 @@ struct ViewFinderView: View {
         
     }
     
-    // 이 함수는 자르기(crop)에서 선택되지 않은 항목을 가리는(obscure, 모호한, 감추다, 빛을 잃게 하다) 주변 뷰(surrounding views)에 대한 오프셋을 돌려준다
-    func getSurroundingViewOffsets(horizontal: Bool, left_or_up: Bool) -> CGFloat {
-        let initialOffset: CGFloat = horizontal ? imageWidth : imageHeight
-        let negativeValue: CGFloat = left_or_up ? -1 : 1
-        // compensator는 '보정기'라는 뜻
+    
+    
+    //This function gets the offset for the surrounding views that obscure what has not been selected in the crop
+    func getSurroundingViewOffsets(horizontal:Bool, left_or_up:Bool) -> CGFloat {
+        let initialOffset:CGFloat = horizontal ? imageWidth : imageHeight
+        let negVal:CGFloat = left_or_up ? -1 : 1
         let compensator = horizontal ? activeOffset.width : activeOffset.height
         
-        return (((negativeValue * initialOffset) - (negativeValue * (initialOffset - getDimension(width: imageWidth, height: imageHeight)) / 2)) / 2) + (compensator / 2) + (-negativeValue * (getDimension(width: imageWidth, height: imageHeight) * (1 - activeMagnification) / 4))
+        return (((negVal * initialOffset) - (negVal * (initialOffset - getDimension(w: imageWidth, h: imageHeight))/2))/2) + (compensator/2) + (-negVal * (getDimension(w: imageWidth, h: imageHeight) * (1 - activeMagnification) / 4))
     }
     
-    /*
-     This function determines the intended magnification(확대) you were going for. It does so by measuring the distance you dragged in both dimensions and comparing it against the longest edge of the image. The larger ratio is determined to be the magnification that you intended.
-     이 함수는 원하는 배율(magnification)을 결정한다. 두 차원에서 드래그 한 거리를 측정하고, 이미지의 가장 긴 가장자리와 비교함으로써 이를 수행한다.
-     더 큰 비율은 사용자가 의도한 배율에 의해 결정된다.
-     */
-    // magnification은 '배율, 확대'라는 뜻
-    func getMagnification(dragTranslation: CGSize) -> CGFloat {
-        print("dragTransition.width: \(dragTranslation.width)")
-        if (getDimension(width: imageWidth, height: imageHeight) - dragTranslation.width) / getDimension(width: imageWidth, height: imageHeight) < (getDimension(width: imageWidth, height: imageHeight) - dragTranslation.height) / getDimension(width: imageWidth, height: imageHeight) {
-            return (getDimension(width: imageWidth, height: imageHeight) - dragTranslation.width) / getDimension(width: imageWidth, height: imageHeight)
+    //This function determines the intended magnification you were going for. It does so by measuring the distance you dragged in both dimensions and comparing it against the longest edge of the image. The larger ratio is determined to be the magnification that you intended.
+    func getMagnification(_ dragTranslation:CGSize) -> CGFloat {
+        print(dragTranslation.width)
+        if (getDimension(w: imageWidth, h: imageHeight) - dragTranslation.width)/getDimension(w: imageWidth, h: imageHeight) < (getDimension(w: imageWidth, h: imageHeight) - dragTranslation.height)/getDimension(w: imageWidth, h: imageHeight) {
+            return (getDimension(w: imageWidth, h: imageHeight) - dragTranslation.width)/getDimension(w: imageWidth, h: imageHeight)
         } else {
-            return (getDimension(width: imageWidth, height: imageHeight) - dragTranslation.height) / getDimension(width: imageWidth, height: imageHeight)
+            return (getDimension(w: imageWidth, h: imageHeight) - dragTranslation.height)/getDimension(w: imageWidth, h: imageHeight)
         }
     }
+    
+    
 }
 
-// 이 함수는 입력 된 두 값(넓이, 높이) 중 더 큰 값을 돌려준다.
-func getDimension(width: CGFloat, height: CGFloat) -> CGFloat {
-    // 높이값이 넓이값보다 크다면
-    if height > width {
-        return width // 넓이값을 돌려준다
-    // 넓이값이 높이값보다 크다면
+
+
+
+
+
+
+
+//This function just gets the larger of two values, when comparing two inputs. It is typically executed by submitting a width and height of a view to return the larger of the two
+func getDimension(w:CGFloat,h:CGFloat) -> CGFloat{
+    if h > w {
+        return w
     } else {
-        return height // 높이값을 돌려준다
+        return h
     }
+    
 }
